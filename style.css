@@ -1,8 +1,7 @@
 /* =============================================
-   VARIABLES — change these to retheme the game
+   VARIABLES
    ============================================= */
 :root {
-  /* Core palette */
   --bg:              #0d0808;
   --surface:         #140c0c;
   --surface-raise:   #1c1010;
@@ -10,18 +9,15 @@
   --border:          #2e1a1a;
   --border-hot:      #5a1a1a;
 
-  /* Neon red accent */
   --accent:          #ff1a1a;
   --accent-dim:      #8b0000;
   --accent-glow:     rgba(255, 26, 26, 0.35);
   --accent-glow-hot: rgba(255, 26, 26, 0.7);
 
-  /* Text */
   --text:            #f5e6e6;
   --text-dim:        #7a5555;
   --text-muted:      #3d2020;
 
-  /* Specific UI */
   --hp-fill:         #ff1a1a;
   --hp-bg:           #1a0808;
   --money-color:     #ffcc00;
@@ -31,7 +27,6 @@
   --btn-disabled:    #2a1414;
   --radius:          4px;
 
-  /* Fonts */
   --font-display:    'Bebas Neue', 'Impact', sans-serif;
   --font-ui:         'Barlow Condensed', 'Arial Narrow', sans-serif;
 }
@@ -64,8 +59,6 @@ body {
 /* =============================================
    BACKGROUND LAYERS
    ============================================= */
-
-/* Concrete wall texture via CSS gradient noise */
 #bg-layer {
   position: fixed;
   inset: 0;
@@ -89,7 +82,6 @@ body {
   pointer-events: none;
 }
 
-/* Noise grain overlay */
 #noise-overlay {
   position: fixed;
   inset: 0;
@@ -101,13 +93,31 @@ body {
   pointer-events: none;
 }
 
-/* Vignette — darkens corners like a room */
 #vignette {
   position: fixed;
   inset: 0;
   z-index: 2;
   background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.75) 100%);
   pointer-events: none;
+}
+
+/* =============================================
+   BREAK FLASH
+   Full-screen red wash on object break.
+   JS adds/removes .active class.
+   ============================================= */
+#break-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(255, 20, 20, 0.18);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.05s ease;
+}
+
+#break-flash.active {
+  opacity: 1;
 }
 
 /* =============================================
@@ -147,7 +157,6 @@ body {
   filter: brightness(0.55) saturate(1.2);
 }
 
-/* Gradient overlay so text reads clearly */
 #logo-banner::after {
   content: '';
   position: absolute;
@@ -220,7 +229,6 @@ body {
   letter-spacing: 2px;
   color: var(--money-color);
   text-shadow: 0 0 14px var(--money-glow);
-  transition: text-shadow 0.2s ease;
 }
 
 #stats-display {
@@ -255,6 +263,112 @@ body {
 }
 
 /* =============================================
+   PROGRESSION BAR
+   Shows object tiers as a horizontal node track.
+   Active node glows. Completed nodes are dimly lit.
+   ============================================= */
+#progression-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+}
+
+#progression-track {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+/* Connecting line behind nodes */
+#progression-track::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border-hot);
+  transform: translateY(-50%);
+  z-index: 0;
+}
+
+.prog-node {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: default;
+}
+
+.prog-node-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-raise);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.prog-node-label {
+  font-family: var(--font-display);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+/* Completed tier */
+.prog-node.done .prog-node-icon {
+  border-color: var(--accent-dim);
+  background: #1f0a0a;
+  filter: brightness(0.7);
+}
+
+.prog-node.done .prog-node-label {
+  color: var(--accent-dim);
+}
+
+/* Active tier */
+.prog-node.active .prog-node-icon {
+  border-color: var(--accent);
+  background: #2a0808;
+  box-shadow:
+    0 0 10px var(--accent-glow),
+    0 0 20px var(--accent-glow);
+}
+
+.prog-node.active .prog-node-label {
+  color: var(--accent);
+}
+
+/* Break counter badge on active node */
+.prog-node-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* =============================================
    ARENA
    ============================================= */
 #arena {
@@ -273,7 +387,6 @@ body {
     inset 0 0 60px rgba(0,0,0,0.4);
 }
 
-/* Subtle wall crack lines via pseudo element */
 #arena::before {
   content: '';
   position: absolute;
@@ -284,7 +397,6 @@ body {
   pointer-events: none;
 }
 
-/* Neon sign at top of arena */
 #neon-sign {
   font-family: var(--font-display);
   font-size: 15px;
@@ -305,13 +417,12 @@ body {
 
 @keyframes neonFlicker {
   0%, 95%, 100% { opacity: 1; }
-  96%           { opacity: 0.85; }
-  97%           { opacity: 1; }
-  98%           { opacity: 0.7; }
-  99%           { opacity: 1; }
+  96%            { opacity: 0.85; }
+  97%            { opacity: 1; }
+  98%            { opacity: 0.7; }
+  99%            { opacity: 1; }
 }
 
-/* Object display */
 #object-area {
   width: 100%;
   display: flex;
@@ -334,35 +445,103 @@ body {
   color: var(--text-dim);
 }
 
+/* Wrapper holds sprite + crack overlay in the same space */
+#object-wrapper {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 #object-sprite {
   font-size: 90px;
   line-height: 1;
-  transition: transform 0.05s ease, filter 0.05s ease;
   user-select: none;
   filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+  transition: transform 0.05s ease, filter 0.05s ease;
+  position: relative;
+  z-index: 1;
 }
 
-/* Hit animation */
+/* Hit squish */
 #object-sprite.hit {
   transform: scale(0.86) rotate(-5deg);
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)) brightness(1.4);
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)) brightness(1.5);
 }
 
-/* Arena shake */
-#arena.shake {
-  animation: arenaShake 0.18s ease;
+/* Break slam-in animation — new object entering */
+#object-sprite.spawn {
+  animation: spawnSlam 0.25s cubic-bezier(0.22, 1.8, 0.5, 1) forwards;
 }
 
-@keyframes arenaShake {
-  0%   { transform: translate(0, 0); }
-  20%  { transform: translate(-6px, 1px); }
-  40%  { transform: translate(6px, -1px); }
-  60%  { transform: translate(-4px, 1px); }
-  80%  { transform: translate(3px, 0); }
-  100% { transform: translate(0, 0); }
+@keyframes spawnSlam {
+  0%   { transform: scale(0.3) translateY(-20px); opacity: 0; }
+  100% { transform: scale(1) translateY(0);        opacity: 1; }
 }
 
-/* HP bar */
+/* =============================================
+   CRACK OVERLAY
+   Three SVG crack lines that become visible
+   as HP drops through thresholds.
+   JS adds crack-stage-1, crack-stage-2, crack-stage-3
+   to #crack-overlay.
+   ============================================= */
+#crack-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.crack {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.55);
+  transform-origin: top center;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+/* Crack 1 — diagonal slash, appears at 66% HP */
+.crack-1 {
+  width: 2px;
+  height: 45px;
+  top: 15px;
+  left: 52px;
+  transform: rotate(25deg);
+  box-shadow: 0 0 4px rgba(255,200,200,0.6);
+}
+
+/* Crack 2 — shorter counter-slash, appears at 33% HP */
+.crack-2 {
+  width: 2px;
+  height: 35px;
+  top: 30px;
+  left: 38px;
+  transform: rotate(-18deg);
+  box-shadow: 0 0 4px rgba(255,200,200,0.6);
+}
+
+/* Crack 3 — horizontal split, appears at 15% HP */
+.crack-3 {
+  width: 55px;
+  height: 2px;
+  top: 55px;
+  left: 25px;
+  transform: rotate(3deg);
+  box-shadow: 0 0 4px rgba(255,200,200,0.6);
+}
+
+/* Stage classes applied by JS */
+#crack-overlay.crack-stage-1 .crack-1 { opacity: 1; }
+#crack-overlay.crack-stage-2 .crack-1,
+#crack-overlay.crack-stage-2 .crack-2 { opacity: 1; }
+#crack-overlay.crack-stage-3 .crack-1,
+#crack-overlay.crack-stage-3 .crack-2,
+#crack-overlay.crack-stage-3 .crack-3 { opacity: 1; }
+
+/* HP Bar */
 #hp-bar-container {
   width: 100%;
   height: 16px;
@@ -379,11 +558,8 @@ body {
   background: linear-gradient(90deg, #8b0000 0%, var(--accent) 100%);
   border-radius: 2px;
   transition: width 0.08s ease;
-  position: relative;
-  z-index: 1;
 }
 
-/* Scanline on HP bar */
 #hp-bar::after {
   content: '';
   position: absolute;
@@ -405,7 +581,7 @@ body {
   color: var(--text-dim);
 }
 
-/* SMASH button */
+/* SMASH Button */
 #hit-btn {
   width: 100%;
   max-width: 300px;
@@ -457,6 +633,20 @@ body {
     inset 0 2px 4px rgba(0,0,0,0.4);
 }
 
+/* Arena shake */
+#arena.shake {
+  animation: arenaShake 0.18s ease;
+}
+
+@keyframes arenaShake {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(-6px, 1px); }
+  40%  { transform: translate(6px, -1px); }
+  60%  { transform: translate(-4px, 1px); }
+  80%  { transform: translate(3px, 0); }
+  100% { transform: translate(0, 0); }
+}
+
 /* =============================================
    UPGRADE PANEL
    ============================================= */
@@ -494,7 +684,6 @@ body {
   gap: 8px;
 }
 
-/* Upgrade card */
 .upgrade-card {
   background: var(--surface-raise);
   border: 1px solid var(--border);
@@ -564,7 +753,7 @@ body {
 }
 
 /* =============================================
-   FOOTER TAG
+   FOOTER
    ============================================= */
 #footer-tag {
   text-align: center;
@@ -576,7 +765,9 @@ body {
 }
 
 /* =============================================
-   FLOATING DAMAGE NUMBER
+   FLOATING NUMBERS
+   Damage: red    — class float-num
+   Reward: yellow — class float-reward
    ============================================= */
 .float-num {
   position: fixed;
@@ -590,8 +781,20 @@ body {
   z-index: 999;
 }
 
+.float-reward {
+  position: fixed;
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 2px;
+  color: var(--money-color);
+  text-shadow: 0 0 12px var(--money-glow);
+  pointer-events: none;
+  animation: floatUp 1s ease forwards;
+  z-index: 999;
+}
+
 @keyframes floatUp {
   0%   { opacity: 1; transform: translateY(0) scale(1.1); }
   30%  { opacity: 1; transform: translateY(-20px) scale(1); }
-  100% { opacity: 0; transform: translateY(-65px) scale(0.85); }
+  100% { opacity: 0; transform: translateY(-70px) scale(0.85); }
 }

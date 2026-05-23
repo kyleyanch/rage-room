@@ -16,6 +16,9 @@
   <div id="noise-overlay"></div>
   <div id="vignette"></div>
 
+  <!-- Full-screen break flash — triggered by JS -->
+  <div id="break-flash"></div>
+
   <div id="game-container">
 
     <!-- LOGO BANNER -->
@@ -46,6 +49,13 @@
       </div>
     </div>
 
+    <!-- PROGRESSION BAR -->
+    <div id="progression-bar">
+      <div id="progression-track">
+        <!-- Tier nodes populated by JS -->
+      </div>
+    </div>
+
     <!-- ARENA -->
     <div id="arena">
       <div id="neon-sign">RAGE ROOM</div>
@@ -53,10 +63,19 @@
       <div id="object-area">
         <div id="current-object">
           <div id="object-name">PLATE</div>
-          <div id="object-sprite">🍽️</div>
+
+          <!-- Crack overlay layers — JS toggles classes to show damage state -->
+          <div id="object-wrapper">
+            <div id="object-sprite">🍽️</div>
+            <div id="crack-overlay">
+              <div class="crack crack-1"></div>
+              <div class="crack crack-2"></div>
+              <div class="crack crack-3"></div>
+            </div>
+          </div>
+
           <div id="hp-bar-container">
             <div id="hp-bar"></div>
-            <div id="hp-bar-glow"></div>
           </div>
           <div id="hp-text">10 / 10</div>
         </div>
