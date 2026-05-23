@@ -798,3 +798,89 @@ body {
   30%  { opacity: 1; transform: translateY(-20px) scale(1); }
   100% { opacity: 0; transform: translateY(-70px) scale(0.85); }
 }
+
+
+/* =============================================
+   V0.4 ADDITIONS
+   ============================================= */
+
+/* Crit flash — brief white-yellow hit on the sprite */
+#object-sprite.crit {
+  filter: drop-shadow(0 0 16px rgba(255, 220, 0, 0.9)) brightness(2);
+}
+
+/* Combo chip — glows hotter as combo rises, set via JS inline var */
+#combo-chip {
+  transition: box-shadow 0.15s ease;
+}
+
+#combo-chip .stat-val {
+  color: #ffcc00;
+  text-shadow: 0 0 10px rgba(255, 204, 0, 0.6);
+  transition: color 0.1s ease;
+}
+
+/* Angry Guy
+   Sits in the top-right corner of the arena.
+   Swings on the .swing animation cycle driven by JS.
+   ============================================= */
+#angry-guy {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0px;
+  pointer-events: none;
+  user-select: none;
+}
+
+#angry-guy-sprite {
+  font-size: 28px;
+  line-height: 1;
+}
+
+#angry-guy-weapon {
+  font-size: 20px;
+  line-height: 1;
+  transform-origin: top center;
+  transform: rotate(-30deg);
+  transition: transform 0.08s ease;
+}
+
+/* Swing state — toggled by JS on auto-hit ticks */
+#angry-guy.swing #angry-guy-weapon {
+  transform: rotate(30deg);
+}
+
+/* Angry guy bounce on swing */
+#angry-guy.swing #angry-guy-sprite {
+  animation: guyBounce 0.15s ease;
+}
+
+@keyframes guyBounce {
+  0%   { transform: translateY(0); }
+  40%  { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
+
+/* Level badge on upgrade cards */
+.upgrade-level {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid var(--border-hot);
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Dimmed upgrade card for locked/unaffordable */
+.upgrade-card.locked {
+  opacity: 0.45;
+}

@@ -11,12 +11,9 @@
 </head>
 <body>
 
-  <!-- Full-page background layers -->
   <div id="bg-layer"></div>
   <div id="noise-overlay"></div>
   <div id="vignette"></div>
-
-  <!-- Full-screen break flash — triggered by JS -->
   <div id="break-flash"></div>
 
   <div id="game-container">
@@ -46,13 +43,17 @@
           <span class="stat-label">SPD</span>
           <span class="stat-val"><span id="stat-speed">0.0</span>/s</span>
         </div>
+        <div class="stat-chip" id="combo-chip" style="display:none;">
+          <span class="stat-label">COMBO</span>
+          <span class="stat-val" id="stat-combo">x1</span>
+        </div>
       </div>
     </div>
 
     <!-- PROGRESSION BAR -->
     <div id="progression-bar">
       <div id="progression-track">
-        <!-- Tier nodes populated by JS -->
+        <!-- Populated by JS -->
       </div>
     </div>
 
@@ -60,11 +61,15 @@
     <div id="arena">
       <div id="neon-sign">RAGE ROOM</div>
 
+      <!-- Angry guy — hidden until auto_hitter upgrade is purchased -->
+      <div id="angry-guy" style="display:none;">
+        <div id="angry-guy-sprite">😤</div>
+        <div id="angry-guy-weapon">🔨</div>
+      </div>
+
       <div id="object-area">
         <div id="current-object">
           <div id="object-name">PLATE</div>
-
-          <!-- Crack overlay layers — JS toggles classes to show damage state -->
           <div id="object-wrapper">
             <div id="object-sprite">🍽️</div>
             <div id="crack-overlay">
@@ -73,7 +78,6 @@
               <div class="crack crack-3"></div>
             </div>
           </div>
-
           <div id="hp-bar-container">
             <div id="hp-bar"></div>
           </div>
@@ -94,7 +98,7 @@
         <span class="title-bracket">]</span>
       </div>
       <div id="upgrade-list">
-        <!-- Populated by script.js -->
+        <!-- Populated by JS -->
       </div>
     </div>
 

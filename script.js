@@ -1,60 +1,90 @@
 // =============================================
-// DATA — add new objects and upgrades here
+// DATA
 // =============================================
 
 const OBJECTS = [
-  { name: "PLATE",    emoji: "🍽️",  baseHp: 10,  reward: 5   },
-  { name: "BOTTLE",   emoji: "🍾",  baseHp: 30,  reward: 15  },
-  { name: "VASE",     emoji: "🏺",  baseHp: 80,  reward: 40  },
-  { name: "TV",       emoji: "📺",  baseHp: 200, reward: 100 },
-  { name: "TOILET",   emoji: "🚽",  baseHp: 500, reward: 250 },
+  { name: "PLATE",    emoji: "🍽️",  baseHp: 8,   reward: 3   },
+  { name: "BOTTLE",   emoji: "🍾",  baseHp: 20,  reward: 8   },
+  { name: "VASE",     emoji: "🏺",  baseHp: 50,  reward: 20  },
+  { name: "TV",       emoji: "📺",  baseHp: 120, reward: 55  },
+  { name: "TOILET",   emoji: "🚽",  baseHp: 300, reward: 130 },
 ];
 
-// Breaks of current object type before advancing to next tier.
-const BREAKS_TO_ADVANCE = 3;
+// Breaks of current object type before advancing to the next tier.
+const BREAKS_TO_ADVANCE = 5;
 
 // HP grows by this multiplier each time the same object type respawns.
-const HP_SCALE_PER_BREAK = 1.2;
+const HP_SCALE_PER_BREAK = 1.15;
 
 // Reward grows by this multiplier each time the same object type respawns.
-const REWARD_SCALE_PER_BREAK = 1.1;
+const REWARD_SCALE_PER_BREAK = 1.08;
+
+// Combo: window in ms during which consecutive hits keep the combo alive.
+const COMBO_WINDOW_MS = 1200;
+
+// Crit: damage multiplier when a crit lands.
+const CRIT_MULTIPLIER = 3;
 
 const UPGRADES = [
   {
     id:        "stronger_hit",
     name:      "STRONGER HIT",
     desc:      "+2 damage per swing",
-    cost:      20,
-    costScale: 1.6,
+    cost:      15,
+    costScale: 1.55,
     maxLevel:  Infinity,
     effect: (state) => { state.damage += 2; },
-  },
-  {
-    id:        "faster_swing",
-    name:      "FASTER SWING",
-    desc:      "+0.5 auto-hits per second",
-    cost:      50,
-    costScale: 1.8,
-    maxLevel:  Infinity,
-    effect: (state) => { state.autoHitsPerSecond += 0.5; },
   },
   {
     id:        "better_bat",
     name:      "BETTER BAT",
     desc:      "x2 damage multiplier (one time)",
-    cost:      200,
+    cost:      150,
     costScale: 999,
     maxLevel:  1,
     effect: (state) => { state.damageMultiplier *= 2; },
+  },
+  {
+    id:        "crit_chance",
+    name:      "CRITICAL HIT",
+    desc:      "+10% chance to deal 3x damage",
+    cost:      40,
+    costScale: 2.0,
+    maxLevel:  5,
+    effect: (state) => { state.critChance = (state.critChance || 0) + 0.10; },
+  },
+  {
+    id:        "rage_combo",
+    name:      "RAGE COMBO",
+    desc:      "Consecutive hits build combo up to x2 damage",
+    cost:      80,
+    costScale: 999,
+    maxLevel:  1,
+    effect: (state) => { state.comboEnabled = true; },
+  },
+  {
+    id:        "auto_hitter",
+    name:      "HIRED MUSCLE",
+    desc:      "+0.5 auto-hits/sec — adds an angry worker",
+    cost:      60,
+    costScale: 1.9,
+    maxLevel:  Infinity,
+    effect: (state) => { state.autoHitsPerSecond += 0.5; },
+  },
+  {
+    id:        "better_gloves",
+    name:      "BETTER GLOVES",
+    desc:      "-10% upgrade costs per level",
+    cost:      100,
+    costScale: 2.2,
+    maxLevel:  5,
+    effect: (state) => { state.costDiscount = (state.costDiscount || 0) + 0.10; },
   },
 ];
 
 
 // =============================================
 // SAVE / LOAD
-// Keys stored in localStorage under SAVE_KEY.
-// Only plain serialisable values — functions are
-// re-attached from UPGRADES[] on load.
 // =============================================
 const SAVE_KEY = "rageroom_save_v1";
 
@@ -71,6 +101,9 @@ function buildDefaultState() {
     damage:            1,
     damageMultiplier:  1,
     autoHitsPerSecond: 0,
+    critChance:        0,
+    comboEnabled:      false,
+    costDiscount:      0,
     objectIndex:       0,
     objectBreakCount:  0,
     currentHp:         0,
@@ -83,22 +116,17 @@ function buildDefaultState() {
 function saveGame(state) {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-  } catch (e) {
-    // localStorage unavailable — silent fail, game still works
-  }
+  } catch (e) { /* silent fail */ }
 }
 
-// Returns a fully valid state object — either from storage or default.
 function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return buildDefaultState();
-
     const saved = JSON.parse(raw);
-
-    // Merge with default to handle missing keys from older saves
-    const base = buildDefaultState();
-    return { ...base, ...saved,
+    const base  = buildDefaultState();
+    return {
+      ...base, ...saved,
       upgradeLevels: { ...base.upgradeLevels, ...(saved.upgradeLevels || {}) },
       upgradeCosts:  { ...base.upgradeCosts,  ...(saved.upgradeCosts  || {}) },
     };
@@ -107,15 +135,16 @@ function loadGame() {
   }
 }
 
-function clearSave() {
-  localStorage.removeItem(SAVE_KEY);
-}
-
 
 // =============================================
 // GAME STATE
 // =============================================
 const gameState = loadGame();
+
+// Runtime-only state — not persisted
+let comboCount    = 1;      // current combo multiplier tier (1 = no bonus)
+let comboTimer    = null;   // timeout handle for combo reset
+let lastAutoSwing = false;  // tracks angry guy swing direction
 
 
 // =============================================
@@ -125,6 +154,8 @@ const dom = {
   money:        document.getElementById("money-amount"),
   damage:       document.getElementById("stat-damage"),
   speed:        document.getElementById("stat-speed"),
+  comboChip:    document.getElementById("combo-chip"),
+  comboVal:     document.getElementById("stat-combo"),
   objectName:   document.getElementById("object-name"),
   objectSprite: document.getElementById("object-sprite"),
   crackOverlay: document.getElementById("crack-overlay"),
@@ -135,6 +166,7 @@ const dom = {
   arena:        document.getElementById("arena"),
   breakFlash:   document.getElementById("break-flash"),
   progTrack:    document.getElementById("progression-track"),
+  angryGuy:     document.getElementById("angry-guy"),
 };
 
 
@@ -142,11 +174,9 @@ const dom = {
 // INIT
 // =============================================
 function init() {
-  // If loading a save, HP may be 0 (just broke) — respawn cleanly
   if (gameState.currentHp <= 0) {
     spawnObject(false);
   } else {
-    // Restore display from saved state without spawn animation
     renderObjectDisplay(false);
   }
 
@@ -157,6 +187,7 @@ function init() {
   updateMoneyDisplay();
   updateHpDisplay();
   updateProgressionBar();
+  updateAngryGuy();
 }
 
 
@@ -183,9 +214,7 @@ function renderObjectDisplay(animate) {
 
   dom.objectName.textContent   = obj.name;
   dom.objectSprite.textContent = obj.emoji;
-
-  // Reset cracks
-  dom.crackOverlay.className = "";
+  dom.crackOverlay.className   = "";
 
   if (animate) {
     dom.objectSprite.classList.remove("spawn");
@@ -218,7 +247,25 @@ function getEffectiveDamage() {
   return Math.floor(gameState.damage * gameState.damageMultiplier);
 }
 
-function applyHit(damage, sourceX, sourceY) {
+// Returns { damage, isCrit } — applies crit chance and combo multiplier.
+function resolveHit(isManual) {
+  let dmg = getEffectiveDamage();
+
+  // Crit
+  const isCrit = gameState.critChance > 0 && Math.random() < gameState.critChance;
+  if (isCrit) dmg = Math.floor(dmg * CRIT_MULTIPLIER);
+
+  // Combo — only applies to manual clicks
+  if (isManual && gameState.comboEnabled && comboCount > 1) {
+    // comboCount goes 1→2→3→4 max, mapped to 1x→1.25x→1.5x→2x
+    const comboBonus = 1 + ((comboCount - 1) / 3) * 1.0;
+    dmg = Math.floor(dmg * Math.min(comboBonus, 2));
+  }
+
+  return { damage: Math.max(dmg, 1), isCrit };
+}
+
+function applyHit(damage, isCrit, sourceX, sourceY) {
   gameState.currentHp -= damage;
 
   if (gameState.currentHp <= 0) {
@@ -229,7 +276,7 @@ function applyHit(damage, sourceX, sourceY) {
     return;
   }
 
-  playHitEffects(damage, sourceX, sourceY);
+  playHitEffects(damage, isCrit, sourceX, sourceY);
   updateHpDisplay();
   updateCracks();
 }
@@ -242,6 +289,7 @@ function handleBreak(sourceX, sourceY) {
 
   triggerBreakFlash();
   spawnRewardFloat(reward, sourceX, sourceY);
+  resetCombo();
 
   advanceObject();
   spawnObject(true);
@@ -252,50 +300,89 @@ function handleBreak(sourceX, sourceY) {
 
 
 // =============================================
+// COMBO
+// =============================================
+function tickCombo() {
+  if (!gameState.comboEnabled) return;
+
+  // Max combo tier is 4
+  comboCount = Math.min(comboCount + 1, 4);
+  updateComboDisplay();
+
+  // Reset the decay timer on every hit
+  clearTimeout(comboTimer);
+  comboTimer = setTimeout(resetCombo, COMBO_WINDOW_MS);
+}
+
+function resetCombo() {
+  comboCount = 1;
+  clearTimeout(comboTimer);
+  updateComboDisplay();
+}
+
+function updateComboDisplay() {
+  if (!gameState.comboEnabled) {
+    dom.comboChip.style.display = "none";
+    return;
+  }
+
+  dom.comboChip.style.display = "flex";
+
+  const labels = ["x1", "x1.25", "x1.5", "x2"];
+  dom.comboVal.textContent = labels[comboCount - 1] || "x2";
+
+  // Intensity glow scales with combo tier
+  const glows = [
+    "none",
+    "0 0 8px rgba(255,204,0,0.3)",
+    "0 0 14px rgba(255,204,0,0.55)",
+    "0 0 22px rgba(255,204,0,0.8)",
+  ];
+  dom.comboChip.style.boxShadow = glows[comboCount - 1] || glows[3];
+}
+
+
+// =============================================
 // VISUAL FEEDBACK
 // =============================================
-function playHitEffects(damage, x, y) {
-  // Sprite squish
-  dom.objectSprite.classList.remove("hit");
-  void dom.objectSprite.offsetWidth;
-  dom.objectSprite.classList.add("hit");
-  setTimeout(() => dom.objectSprite.classList.remove("hit"), 100);
+function playHitEffects(damage, isCrit, x, y) {
+  const sprite = dom.objectSprite;
 
-  // Arena shake
-  dom.arena.classList.remove("shake");
-  void dom.arena.offsetWidth;
-  dom.arena.classList.add("shake");
-  setTimeout(() => dom.arena.classList.remove("shake"), 180);
+  // Sprite squish — harder on crit
+  sprite.classList.remove("hit", "crit");
+  void sprite.offsetWidth;
+  sprite.classList.add(isCrit ? "crit" : "hit");
+  setTimeout(() => sprite.classList.remove("hit", "crit"), isCrit ? 160 : 100);
 
-  // Floating damage number — only on manual click (x/y defined)
+  // Arena shake — only on crit or manual hit
+  if (isCrit || (x !== undefined)) {
+    dom.arena.classList.remove("shake");
+    void dom.arena.offsetWidth;
+    dom.arena.classList.add("shake");
+    setTimeout(() => dom.arena.classList.remove("shake"), 180);
+  }
+
+  // Floating number — manual clicks only
   if (x !== undefined && y !== undefined) {
-    spawnFloatingNumber(`-${damage}`, x, y, "float-num");
+    const label = isCrit ? `💥${damage}` : `-${damage}`;
+    spawnFloatingNumber(label, x, y, "float-num");
   }
 }
 
 function triggerBreakFlash() {
   dom.breakFlash.classList.add("active");
   setTimeout(() => dom.breakFlash.classList.remove("active"), 80);
-
-  // Extra brief bright flash on sprite before it disappears
   dom.objectSprite.style.filter = "brightness(4)";
   setTimeout(() => { dom.objectSprite.style.filter = ""; }, 80);
 }
 
-// Crack stage is derived from HP percentage thresholds.
 function updateCracks() {
-  const pct = gameState.currentHp / gameState.currentMaxHp;
+  const pct     = gameState.currentHp / gameState.currentMaxHp;
   const overlay = dom.crackOverlay;
-
   overlay.classList.remove("crack-stage-1", "crack-stage-2", "crack-stage-3");
-
-  if (pct <= 0.15) {
-    overlay.classList.add("crack-stage-3");
-  } else if (pct <= 0.33) {
-    overlay.classList.add("crack-stage-2");
-  } else if (pct <= 0.66) {
-    overlay.classList.add("crack-stage-1");
-  }
+  if      (pct <= 0.15) overlay.classList.add("crack-stage-3");
+  else if (pct <= 0.33) overlay.classList.add("crack-stage-2");
+  else if (pct <= 0.66) overlay.classList.add("crack-stage-1");
 }
 
 function spawnFloatingNumber(text, x, y, className) {
@@ -309,10 +396,24 @@ function spawnFloatingNumber(text, x, y, className) {
 }
 
 function spawnRewardFloat(reward, x, y) {
-  // Reward float appears slightly above and offset from the damage float
   const rx = (x !== undefined) ? x + 20 : window.innerWidth / 2;
-  const ry = (y !== undefined) ? y - 10 : window.innerHeight / 2;
+  const ry = (y !== undefined) ? y - 10  : window.innerHeight / 2;
   spawnFloatingNumber(`+$${reward}`, rx, ry, "float-reward");
+}
+
+
+// =============================================
+// ANGRY GUY
+// Shown as soon as auto_hitter level >= 1.
+// Swings in sync with auto-hit ticks.
+// =============================================
+function updateAngryGuy() {
+  const active = gameState.upgradeLevels["auto_hitter"] > 0;
+  dom.angryGuy.style.display = active ? "flex" : "none";
+}
+
+function triggerAngrySwing() {
+  dom.angryGuy.classList.toggle("swing");
 }
 
 
@@ -321,7 +422,7 @@ function spawnRewardFloat(reward, x, y) {
 // =============================================
 function updateHpDisplay() {
   const pct = gameState.currentHp / gameState.currentMaxHp;
-  dom.hpBar.style.width = `${Math.max(pct * 100, 0)}%`;
+  dom.hpBar.style.width  = `${Math.max(pct * 100, 0)}%`;
   dom.hpText.textContent = `${gameState.currentHp} / ${gameState.currentMaxHp}`;
 }
 
@@ -335,16 +436,47 @@ function updateUpgradeButtons() {
   UPGRADES.forEach(u => {
     const btn   = document.getElementById(`upgrade-btn-${u.id}`);
     const level = gameState.upgradeLevels[u.id];
-    const cost  = gameState.upgradeCosts[u.id];
+    const cost  = getDiscountedCost(u.id);
+    const card  = btn ? btn.closest(".upgrade-card") : null;
 
-    if (!btn) return;
+    if (!btn || !card) return;
 
     const maxed     = level >= u.maxLevel;
     const canAfford = gameState.money >= cost;
 
     btn.disabled    = maxed || !canAfford;
     btn.textContent = maxed ? "MAXED" : `$${cost}`;
+
+    // Dim card if can't afford and not maxed
+    card.classList.toggle("locked", !maxed && !canAfford);
+
+    // Update level badge
+    let badge = card.querySelector(".upgrade-level");
+    if (u.maxLevel !== 1 && u.maxLevel !== Infinity) {
+      // Capped repeatable — show X/MAX
+      if (!badge) {
+        badge = document.createElement("span");
+        badge.className = "upgrade-level";
+        card.querySelector(".upgrade-name").appendChild(badge);
+      }
+      badge.textContent = maxed ? "MAX" : `${level}/${u.maxLevel}`;
+    } else if (u.maxLevel === Infinity && level > 0) {
+      // Unlimited — show current level
+      if (!badge) {
+        badge = document.createElement("span");
+        badge.className = "upgrade-level";
+        card.querySelector(".upgrade-name").appendChild(badge);
+      }
+      badge.textContent = `Lv${level}`;
+    }
   });
+}
+
+// Returns cost after applying the costDiscount stat.
+function getDiscountedCost(upgradeId) {
+  const raw      = gameState.upgradeCosts[upgradeId];
+  const discount = Math.min(gameState.costDiscount || 0, 0.5); // cap at 50% off
+  return Math.max(Math.ceil(raw * (1 - discount)), 1);
 }
 
 
@@ -356,9 +488,9 @@ function buildProgressionBar() {
 
   OBJECTS.forEach((obj, i) => {
     const node = document.createElement("div");
-    node.className  = "prog-node";
-    node.id         = `prog-node-${i}`;
-    node.innerHTML  = `
+    node.className = "prog-node";
+    node.id        = `prog-node-${i}`;
+    node.innerHTML = `
       <div class="prog-node-icon">${obj.emoji}</div>
       <div class="prog-node-label">${obj.name}</div>
     `;
@@ -377,12 +509,10 @@ function updateProgressionBar() {
 
     if (i < gameState.objectIndex) {
       node.classList.add("done");
-      // Remove any leftover badge
       const badge = node.querySelector(".prog-node-badge");
       if (badge) badge.remove();
     } else if (i === gameState.objectIndex) {
       node.classList.add("active");
-      // Show break counter badge
       let badge = node.querySelector(".prog-node-badge");
       if (!badge) {
         badge = document.createElement("div");
@@ -391,7 +521,6 @@ function updateProgressionBar() {
       }
       badge.textContent = gameState.objectBreakCount;
     } else {
-      // Future nodes — remove badge if present
       const badge = node.querySelector(".prog-node-badge");
       if (badge) badge.remove();
     }
@@ -424,7 +553,7 @@ function buildUpgradePanel() {
 }
 
 function purchaseUpgrade(u) {
-  const cost  = gameState.upgradeCosts[u.id];
+  const cost  = getDiscountedCost(u.id);
   const level = gameState.upgradeLevels[u.id];
 
   if (gameState.money < cost) return;
@@ -432,9 +561,14 @@ function purchaseUpgrade(u) {
 
   gameState.money -= cost;
   gameState.upgradeLevels[u.id]++;
-  gameState.upgradeCosts[u.id] = Math.ceil(cost * u.costScale);
+  // Store raw cost for next level, discount is applied at display/purchase time
+  gameState.upgradeCosts[u.id] = Math.ceil(gameState.upgradeCosts[u.id] * u.costScale);
 
   u.effect(gameState);
+
+  // Special side-effects on purchase
+  if (u.id === "auto_hitter") updateAngryGuy();
+  if (u.id === "rage_combo")  updateComboDisplay();
 
   updateMoneyDisplay();
   updateUpgradeButtons();
@@ -445,7 +579,10 @@ function purchaseUpgrade(u) {
 // =============================================
 // AUTO HITTER
 // =============================================
-let lastAutoTick = performance.now();
+let lastAutoTick     = performance.now();
+// Accumulator for partial swing timing so angry guy animation rate
+// matches actual auto-hit rate regardless of rAF timing.
+let swingAccumulator = 0;
 
 function startAutoHitter() {
   function tick(now) {
@@ -453,10 +590,23 @@ function startAutoHitter() {
     lastAutoTick = now;
 
     if (gameState.autoHitsPerSecond > 0) {
-      const damage = getEffectiveDamage() * gameState.autoHitsPerSecond * delta;
-      const floored = Math.floor(damage);
+      const rawDamage = getEffectiveDamage() * gameState.autoHitsPerSecond * delta;
+      const floored   = Math.floor(rawDamage);
+
       if (floored > 0) {
-        applyHit(floored); // no coords — no floating number for auto hits
+        const { damage, isCrit } = resolveHit(false);
+        // Scale resolved damage to match the accumulated delta amount
+        const scaledDamage = Math.floor(damage * gameState.autoHitsPerSecond * delta);
+        if (scaledDamage > 0) {
+          applyHit(scaledDamage, isCrit);
+        }
+      }
+
+      // Drive angry guy swing at a rate proportional to autoHitsPerSecond
+      swingAccumulator += gameState.autoHitsPerSecond * delta;
+      if (swingAccumulator >= 1) {
+        swingAccumulator -= 1;
+        triggerAngrySwing();
       }
     }
 
@@ -471,7 +621,9 @@ function startAutoHitter() {
 // =============================================
 function bindEvents() {
   dom.hitBtn.addEventListener("click", (e) => {
-    applyHit(getEffectiveDamage(), e.clientX, e.clientY);
+    const { damage, isCrit } = resolveHit(true);
+    tickCombo();
+    applyHit(damage, isCrit, e.clientX, e.clientY);
     updateMoneyDisplay();
   });
 }
