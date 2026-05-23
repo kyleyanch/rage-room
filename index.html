@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rage Room</title>
+    <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+ 
+  <div id="game-container">
+ 
+    <!-- TOP BAR -->
+    <div id="top-bar">
+      <div id="money-display">
+        <span id="money-label">CASH</span>
+        <span id="money-amount">$0</span>
+      </div>
+      <div id="stats-display">
+        <span>DMG: <span id="stat-damage">1</span></span>
+        <span>SPD: <span id="stat-speed">1.0</span>/s</span>
+      </div>
+    </div>
+ 
+    <!-- ARENA -->
+    <div id="arena">
+ 
+      <div id="object-area">
+        <div id="current-object">
+          <div id="object-name">PLATE</div>
+          <div id="object-sprite">🍽️</div>
+          <div id="hp-bar-container">
+            <div id="hp-bar"></div>
+          </div>
+          <div id="hp-text">10 / 10</div>
+        </div>
+      </div>
+ 
+      <button id="hit-btn">SMASH</button>
+ 
+    </div>
+ 
+    <!-- UPGRADES PANEL -->
+    <div id="upgrade-panel">
+      <div id="upgrade-panel-title">UPGRADES</div>
+      <div id="upgrade-list">
+        <!-- Populated by script.js -->
+      </div>
+    </div>
+ 
+  </div>
+ 
+  <script src="script.js"></script>
+</body>
+</html>

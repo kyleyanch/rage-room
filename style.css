@@ -1,0 +1,299 @@
+/* =============================================
+   VARIABLES — change these to retheme the game
+   ============================================= */
+:root {
+  --bg:           #1a1a1a;
+  --surface:      #242424;
+  --surface-raise:#2e2e2e;
+  --border:       #3a3a3a;
+  --accent:       #e63946;
+  --accent-dim:   #9b1c26;
+  --text:         #f0f0f0;
+  --text-dim:     #888;
+  --hp-fill:      #e63946;
+  --hp-bg:        #3a1a1a;
+  --money-color:  #f4c430;
+  --btn-bg:       #e63946;
+  --btn-hover:    #c1121f;
+  --btn-disabled: #444;
+  --radius:       6px;
+}
+ 
+/* =============================================
+   RESET & BASE
+   ============================================= */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+ 
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Courier New', Courier, monospace;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px 16px;
+}
+ 
+/* =============================================
+   LAYOUT
+   ============================================= */
+#game-container {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+ 
+/* =============================================
+   TOP BAR
+   ============================================= */
+#top-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+ 
+#money-label {
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 2px;
+  margin-right: 8px;
+}
+ 
+#money-amount {
+  color: var(--money-color);
+  font-size: 22px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+ 
+#stats-display {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+ 
+#stats-display span span {
+  color: var(--text);
+}
+ 
+/* =============================================
+   ARENA
+   ============================================= */
+#arena {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+ 
+#object-area {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+ 
+#current-object {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 280px;
+}
+ 
+#object-name {
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+}
+ 
+#object-sprite {
+  font-size: 80px;
+  line-height: 1;
+  transition: transform 0.05s ease;
+  user-select: none;
+}
+ 
+/* Hit animation — added/removed by JS */
+#object-sprite.hit {
+  transform: scale(0.88) rotate(-4deg);
+}
+ 
+/* Shake animation — added/removed by JS */
+#arena.shake {
+  animation: shake 0.15s ease;
+}
+ 
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  25%  { transform: translateX(-5px); }
+  50%  { transform: translateX(5px); }
+  75%  { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
+}
+ 
+/* HP Bar */
+#hp-bar-container {
+  width: 100%;
+  height: 14px;
+  background: var(--hp-bg);
+  border-radius: 99px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+ 
+#hp-bar {
+  height: 100%;
+  width: 100%;
+  background: var(--hp-fill);
+  border-radius: 99px;
+  transition: width 0.1s ease;
+}
+ 
+#hp-text {
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+ 
+/* SMASH Button */
+#hit-btn {
+  width: 100%;
+  max-width: 280px;
+  padding: 14px;
+  background: var(--btn-bg);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 4px;
+  cursor: pointer;
+  transition: background 0.1s ease, transform 0.05s ease;
+}
+ 
+#hit-btn:hover {
+  background: var(--btn-hover);
+}
+ 
+#hit-btn:active {
+  transform: scale(0.97);
+}
+ 
+/* =============================================
+   UPGRADE PANEL
+   ============================================= */
+#upgrade-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+ 
+#upgrade-panel-title {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+ 
+#upgrade-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+ 
+/* Individual upgrade card */
+.upgrade-card {
+  background: var(--surface-raise);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+ 
+.upgrade-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+ 
+.upgrade-name {
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+ 
+.upgrade-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+ 
+.upgrade-btn {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  background: var(--btn-bg);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+  white-space: nowrap;
+}
+ 
+.upgrade-btn:hover:not(:disabled) {
+  background: var(--btn-hover);
+}
+ 
+.upgrade-btn:disabled {
+  background: var(--btn-disabled);
+  cursor: not-allowed;
+  color: var(--text-dim);
+}
+ 
+/* Floating damage number */
+.float-num {
+  position: fixed;
+  font-size: 18px;
+  font-weight: bold;
+  font-family: 'Courier New', Courier, monospace;
+  color: var(--accent);
+  pointer-events: none;
+  animation: floatUp 0.8s ease forwards;
+  z-index: 999;
+}
+ 
+@keyframes floatUp {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
+}
+ 
