@@ -1,15 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Rage Room</title>
-    <link rel="stylesheet" href="style.css"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rage Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
- 
+
+  <!-- Full-page background layers -->
+  <div id="bg-layer"></div>
+  <div id="noise-overlay"></div>
+  <div id="vignette"></div>
+
   <div id="game-container">
- 
+
+    <!-- LOGO BANNER -->
+    <div id="logo-banner">
+      <img src="assets/img/rage-room.png" alt="Rage Room" id="logo-img" />
+      <div id="logo-text">
+        <span class="logo-line">SMASH</span>
+        <span class="logo-line accent">RELEASE</span>
+        <span class="logo-line">DESTROY</span>
+      </div>
+    </div>
+
     <!-- TOP BAR -->
     <div id="top-bar">
       <div id="money-display">
@@ -17,39 +35,54 @@
         <span id="money-amount">$0</span>
       </div>
       <div id="stats-display">
-        <span>DMG: <span id="stat-damage">1</span></span>
-        <span>SPD: <span id="stat-speed">1.0</span>/s</span>
+        <div class="stat-chip">
+          <span class="stat-label">DMG</span>
+          <span class="stat-val" id="stat-damage">1</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-label">SPD</span>
+          <span class="stat-val"><span id="stat-speed">0.0</span>/s</span>
+        </div>
       </div>
     </div>
- 
+
     <!-- ARENA -->
     <div id="arena">
- 
+      <div id="neon-sign">RAGE ROOM</div>
+
       <div id="object-area">
         <div id="current-object">
           <div id="object-name">PLATE</div>
           <div id="object-sprite">🍽️</div>
           <div id="hp-bar-container">
             <div id="hp-bar"></div>
+            <div id="hp-bar-glow"></div>
           </div>
           <div id="hp-text">10 / 10</div>
         </div>
       </div>
- 
-      <button id="hit-btn">SMASH</button>
- 
+
+      <button id="hit-btn">
+        <span id="hit-btn-text">SMASH</span>
+      </button>
     </div>
- 
+
     <!-- UPGRADES PANEL -->
     <div id="upgrade-panel">
-      <div id="upgrade-panel-title">UPGRADES</div>
+      <div id="upgrade-panel-title">
+        <span class="title-bracket">[</span>
+        UPGRADES
+        <span class="title-bracket">]</span>
+      </div>
       <div id="upgrade-list">
         <!-- Populated by script.js -->
       </div>
     </div>
- 
+
+    <div id="footer-tag">SMASH · RELEASE · DESTROY</div>
+
   </div>
- 
+
   <script src="script.js"></script>
 </body>
 </html>
